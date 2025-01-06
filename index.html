@@ -1,0 +1,170 @@
+<html>
+	<head>
+		<style>
+			:root
+			{
+				--paper: #eee;
+				--border: #aaa;
+				--suit-unknown: #aaa;
+				--suit-heart: #d42a2a;
+				--suit-diamond: #d4962a;
+				--suit-spade: #333;
+				--suit-club: #2a60d4;
+				
+				/* 3.5 inches x 2.5 inches */
+				--cardWidth: 30pt;
+				--cardHeight: calc( var(--cardWidth) * 1.4 );
+				
+				--raisePx: 10px;
+			}
+			
+			html
+			{
+				background: #13a8a8;
+			}
+			
+			.Card
+			{
+				--shadowHeight: 2px;
+				--shadowWidth: 1px;
+				
+				display: inline-block;
+				width: var(--cardWidth);
+				height: var(--cardHeight);
+				background: var(--paper);
+				border-radius: 10%;
+				border: 1px solid var(--border);
+				margin:	3pt;
+				padding: 0pt;
+				font-family: "serif";
+				font-weight: bold;
+				font-size: calc( var(--width) * 0.3 );
+				text-align: center;
+				color: var(--suit-unknown);
+				filter: drop-shadow( var(--shadowWidth) var(--shadowHeight) 1px rgba(0,0,0,0.5) );
+			}
+			
+			.Card[onclick]
+			{
+				background:red!;
+				cursor: pointer;
+			}
+			.Card[onclick]:hover
+			{
+				position: relative;
+				top: calc( var(--raisePx) * -1 );
+				--shadowHeight: var(--raisePx);
+			}
+			
+			.Card:before 
+			{
+				display: block;
+				content: attr(Value);
+			}
+			.Card[Value="11"]:before	{	content: "J";	}
+			.Card[Value="12"]:before	{	content: "Q";	}
+			.Card[Value="13"]:before	{	content: "K";	}
+			.Card[Value="14"]:before	{	content: "A";	}
+			
+			.Card:after
+			{
+				display: block;
+				content: attr(Suit);
+				font-size: calc( var(--width) * 0.6 );
+			}
+			.Card[Suit=Heart]	{	color: var(--suit-heart);	}
+			.Card[Suit=Diamond]	{	color: var(--suit-diamond);	}
+			.Card[Suit=Spade]	{	color: var(--suit-spade);	}
+			.Card[Suit=Club]	{	color: var(--suit-club);	}
+			
+			.Card[Suit=Heart]:after
+			{
+				content: "\2665";	/* &#9829 */
+			}
+			.Card[Suit=Diamond]:after
+			{
+				content: "\2666";	/* &#9830 */
+			}
+			.Card[Suit=Spade]:after
+			{
+				content: "\2660";	/* &#9824 */
+			}
+			.Card[Suit=Club]:after
+			{
+				content: "\2663";	/* &#9827 */
+			}
+			
+			#Board
+			{
+				padding: 10pt;
+				background:	rgba(0,0,0,0.3);
+				min-height: var(--cardHeight);
+				border-radius: 10pt;
+				margin: 10pt;
+			}
+			
+		</style>
+	</head>
+	<body>
+		
+		<div id=Board></div>
+		
+		<div id=Pile></div>
+		
+		<script type=module>
+			import * as Poker from './Poker.js'
+			
+			function OnCardClicked(CardDiv)
+			{
+				console.log("clicked");
+				if ( CardDiv.parentElement == Pile )
+				{
+					AddToBoard(CardDiv);
+				}
+				else if ( CardDiv.parentElement == Board )
+				{
+					AddToPile(CardDiv);
+				}
+			}
+			
+			
+			function MakeCardDiv(CardMeta)
+			{
+				const CardDiv = document.createElement(`div`);
+				CardDiv.classList.add(`Card`);
+				CardDiv.setAttribute('Value',CardMeta.Value);
+				CardDiv.setAttribute('Suit',CardMeta.Suit);
+				CardDiv.setAttribute('onclick','');
+				CardDiv.onclick = () => { OnCardClicked(CardDiv); };
+				return CardDiv;
+			}
+			
+			function AddToPile(CardDiv)
+			{
+				Pile.appendChild(CardDiv);
+			}
+			
+			function AddToBoard(CardDiv)
+			{
+				Board.appendChild(CardDiv);
+			}
+			
+			function LoadDeck()
+			{
+				function MakeCard(CardMeta)
+				{
+					const Card = MakeCardDiv(CardMeta);
+					AddToPile(Card);
+				}
+				const Cards = Poker.GetAllCards();
+				Cards.forEach( MakeCard );
+			}
+			
+			LoadDeck();
+			
+		</script>
+		
+		
+	</body>
+</html>
+
