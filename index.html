@@ -51,12 +51,16 @@
 				background:red!;
 				cursor: pointer;
 			}
-			.Card[onclick]:hover
+			/* only add hover on devices with hover capabilities */
+			@media(hover) 
 			{
-				position: relative;
-				top: calc( var(--raisePx) * -1 );
-				--shadowHeight: var(--raisePx);
-			}
+				.Card[onclick]:hover
+				{
+					position: relative;
+					top: calc( var(--raisePx) * -1 );
+					--shadowHeight: var(--raisePx);
+				}
+			}	
 			
 			.Card:before 
 			{
