@@ -390,6 +390,9 @@
 			
 			function MakeCardDiv(CardMeta,Clickable,Classes=[])
 			{
+				if ( CardMeta.RepresentCard )
+					CardMeta = CardMeta.RepresentCard;
+				
 				const CardDiv = document.createElement(`div`);
 				CardDiv.classList.add(`Card`,...Classes);
 				CardDiv.setAttribute('Rank',CardMeta.Rank);

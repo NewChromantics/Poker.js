@@ -214,7 +214,7 @@ function PopNCardsWithRank(Cards,Rank,MinimumPopped,MaxiumumPopped)
 			const RepRank = MatchCard.RankOrWildNull ?? Rank;
 			//	todo: get a suit that's unused in this meld
 			const RepSuit = MatchCard.SuitOrWildNull ?? DefaultDeck.Suits[0]; 
-			//PoppedCard.RepresentCard = new Card( RepSuit, RepRank );
+			PoppedCard.RepresentCard = new Card( RepSuit, RepRank );
 		}
 		
 		Popped.push( PoppedCard );
