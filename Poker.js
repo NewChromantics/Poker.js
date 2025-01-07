@@ -94,6 +94,11 @@ export class Card
 		return !this.SuitOrWildNull || !this.RankOrWildNull;
 	}
 	
+	get ScoreCard()
+	{
+		return this.RepresentCard ?? this;
+	}
+	
 	Equals(that)
 	{
 		return (this.Rank == that.Rank) && (this.Suit == that.Suit);
@@ -535,6 +540,23 @@ export function GetScoringHand(Cards)
 		GetOnePairHand,
 		GetHighCardHand
 	];
+	//	best denominator you can get is 14*5
+	//	thus each score jumps by this + 1?
+	const MaxHandSize = 5;
+	const Denom = (DefaultDeck.HighestRank * MaxHandSize) + 1;
+	const HandBaseScores =
+	[
+		Denom*9,
+		Denom*8,
+		Denom*7,
+		Denom*6,
+		Denom*5,
+		Denom*4,
+		Denom*3,
+		Denom*2,
+		Denom*1,
+		Denom*0,
+	];
 	
 	if ( Cards.length == 0 )
 		return new Hand( [], HandTypes.slice(-1)[0], 0 );
@@ -546,7 +568,13 @@ export function GetScoringHand(Cards)
 		if ( HandCards === false )
 			continue;
 		const HandType = HandTypes[f];
-		const Score = 1;
+		
+		//	gr: this score also needs to include kickers
+		//		we should probably modify all funcs to return N cards
+		let Score = HandBaseScores[f];
+		for ( let Card of HandCards )
+			Score += Card.ScoreCard.Rank;
+		
 		return new Hand( HandCards, HandType, Score );
 	}
 	

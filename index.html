@@ -233,6 +233,12 @@
 				xxdisplay:none;
 			}
 			
+			#BestHandName,
+			#BestHandScore
+			{
+				display: inline-block;
+			}
+			
 			#Pile
 			{
 				/* center all the cards in the div */
@@ -252,8 +258,9 @@
 				<!--<div class="Card Static" Rank="-1"></div>-->
 				<div class="Card Static" onclick="MoveRandomCardToBoard(this)"></div>
 			</div>
+			<label>Best Hand</label>
 			<div id=BestHandCards></div>
-			<label id=BestHandName></label>
+			<div id=BestHandName></div>
 			<div id=BestHandScore></div>
 			<!--
 			<Label>Nuts</label>
