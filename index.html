@@ -23,12 +23,20 @@
 			html
 			{
 				background: #13a8a8;
+				color:	var(--paper);
+				font-family: sans-serif;
+				font-weight: bold;
+				font-size: 10pt;
 			}
 			
 			.Card
 			{
 				--shadowHeight: 2px;
 				--shadowWidth: 1px;
+				--shadowRadius: 0.5px;
+				
+				xbox-sizing:	border-box;	/* border is part of size */
+				transition: all ease 0.1s;
 				
 				display: inline-block;
 				width: var(--cardWidth);
@@ -43,7 +51,7 @@
 				font-size: calc( var(--width) * 0.3 );
 				text-align: center;
 				color: var(--suit-unknown);
-				filter: drop-shadow( var(--shadowWidth) var(--shadowHeight) 1px rgba(0,0,0,0.5) );
+				filter: drop-shadow( var(--shadowWidth) var(--shadowHeight) var(--shadowRadius) rgba(0,0,0,0.5) );
 			}
 			
 			.Card[onclick]
@@ -56,9 +64,11 @@
 			{
 				.Card[onclick]:hover
 				{
-					position: relative;
-					top: calc( var(--raisePx) * -1 );
+					transform: translate( -1px, calc( var(--raisePx) * -1 ) ) rotate(-2deg);
+					xxborder-bottom: calc( var(--raisePx) * 1 ) solid rgba(0,0,0,0);
 					--shadowHeight: var(--raisePx);
+					--shadowWidth: 3px;
+					--shadowRadius: 3px;
 				}
 			}	
 			
@@ -100,29 +110,76 @@
 				content: "\2663";	/* &#9827 */
 			}
 			
-			#Board
+			#BoardContainer
 			{
 				padding: 10pt;
 				background:	rgba(0,0,0,0.3);
-				min-height: var(--cardHeight);
 				border-radius: 10pt;
 				margin: 10pt;
+			}
+			
+			#Board
+			{
+				min-height: calc( var(--cardHeight) * 1.2 );
 			}
 			
 		</style>
 	</head>
 	<body>
 		
-		<div id=Board></div>
+		<div id=BoardContainer>
+			<label>Board</label>
+			<div id=Board></div>
+			<div id=BestHandCards></div>
+			<div id=BestHandName></div>
+		</div>
 		
 		<div id=Pile></div>
 		
 		<script type=module>
 			import * as Poker from './Poker.js'
 			
+			function GetCardMeta(CardDiv)
+			{
+				const Suit = CardDiv.getAttribute('Suit');
+				const Value = CardDiv.getAttribute('Value');
+				return new Poker.Card(Suit,Value);
+			}
+			
+			function GetBoardCardMetas()
+			{
+				const CardDivs = Array.from( document.querySelectorAll(`#Board .Card`) );
+				const CardMetas = CardDivs.map( GetCardMeta );
+				return CardMetas;
+			}
+			
+			function GetBoardBestHand()
+			{
+				const Cards = GetBoardCardMetas();
+				//	get new score
+				try
+				{
+					const Hand = Poker.GetScoringHand(Cards);
+					return Hand;
+				}
+				catch(e)
+				{
+					return `Error: ${e}`;
+				}
+			}
+			
+			function OnBoardChanged()
+			{
+				const BestHand = GetBoardBestHand();
+				const BestHandCardsDiv = document.querySelector(`#BestHandCards`);
+				const BestHandNameDiv = document.querySelector(`#BestHandName`);
+				const NewCardDivs = BestHand.Cards.map( MakeCardDiv );
+				BestHandCardsDiv.replaceChildren(...NewCardDivs);
+				BestHandNameDiv.innerText = BestHand.Type;
+			}
+			
 			function OnCardClicked(CardDiv)
 			{
-				console.log("clicked");
 				if ( CardDiv.parentElement == Pile )
 				{
 					AddToBoard(CardDiv);
@@ -134,32 +191,38 @@
 			}
 			
 			
-			function MakeCardDiv(CardMeta)
+			function MakeCardDiv(CardMeta,Clickable)
 			{
 				const CardDiv = document.createElement(`div`);
 				CardDiv.classList.add(`Card`);
 				CardDiv.setAttribute('Value',CardMeta.Value);
 				CardDiv.setAttribute('Suit',CardMeta.Suit);
-				CardDiv.setAttribute('onclick','');
-				CardDiv.onclick = () => { OnCardClicked(CardDiv); };
+				
+				if ( Clickable === true )
+				{
+					CardDiv.setAttribute('onclick','');
+					CardDiv.onclick = () => { OnCardClicked(CardDiv); };
+				}
 				return CardDiv;
 			}
 			
 			function AddToPile(CardDiv)
 			{
 				Pile.appendChild(CardDiv);
+				OnBoardChanged();
 			}
 			
 			function AddToBoard(CardDiv)
 			{
 				Board.appendChild(CardDiv);
+				OnBoardChanged();
 			}
 			
 			function LoadDeck()
 			{
 				function MakeCard(CardMeta)
 				{
-					const Card = MakeCardDiv(CardMeta);
+					const Card = MakeCardDiv(CardMeta,true);
 					AddToPile(Card);
 				}
 				const Cards = Poker.GetAllCards();
