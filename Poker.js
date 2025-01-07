@@ -276,7 +276,7 @@ function GetStraightFlushHand(Cards)
 function GetFlushHand(Cards)
 {
 	//	enum suits
-	const Suits = new Set( Cards.map(c=>c.Suit) );
+	const Suits = [...new Set( Cards.map(c=>c.Suit) )];
 	for ( let Suit of Suits )
 	{
 		//	need to ignore matching wild suits here
