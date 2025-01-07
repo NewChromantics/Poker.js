@@ -78,6 +78,8 @@
 				
 				position: relative; /* required for all after/befores */
 				
+				overflow:hidden;
+				
 				display: inline-block;
 				width: var(--cardWidth);
 				height: var(--cardHeight);
@@ -157,6 +159,17 @@
 			.Card[Value="12"]:before	{	content: "Q";	}
 			.Card[Value="13"]:before	{	content: "K";	}
 			.Card[Value="14"]:before	{	content: "A";	}
+			.Card[Value="-1"]:before
+			{	
+				/*content: "\1F0CF";	/* joker emoji */
+				content: "\a0";
+				background: url('Joker.svg');
+				background-repeat: no-repeat;
+				background-size: 80%;
+				bottom: 0px;
+				top: 0px;
+				background-position: center
+			}	
 			
 			.Card:after
 			{
@@ -168,6 +181,7 @@
 			.Card[Suit=Diamond]	{	color: var(--suit-diamond);	}
 			.Card[Suit=Spade]	{	color: var(--suit-spade);	}
 			.Card[Suit=Club]	{	color: var(--suit-club);	}
+			.Card[Suit="*"]	{	color: rgba(0,0,0,0);	}
 			
 			.Card[Suit=Heart]:after
 			{
@@ -201,7 +215,7 @@
 			
 			#BestHandCards
 			{
-				display:none;
+				xxdisplay:none;
 			}
 			
 		</style>
@@ -211,13 +225,16 @@
 		<div id=BoardContainer>
 			<label>Board</label>
 			<div id=Board>
+				<!--<div class="Card Static" Value="-1"></div>-->
 				<div class="Card Static" onclick="MoveRandomCardToBoard(this)"></div>
 			</div>
 			<div id=BestHandCards></div>
 			<label id=BestHandName></label>
 			<div id=BestHandScore></div>
+			<!--
 			<Label>Nuts</label>
 			<div id=NutsCards></div>
+			-->
 		</div>
 		
 		<div id=Pile></div>
@@ -387,6 +404,8 @@
 					const Card = MakeCardDiv(CardMeta,true);
 					AddToPile(Card);
 				}
+				const Jokers = Poker.GetJokerCards(1);
+				Jokers.forEach( MakeCard );
 				const Cards = Poker.GetAllCards();
 				Cards.forEach( MakeCard );
 			}

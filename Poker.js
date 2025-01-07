@@ -2,7 +2,9 @@
 const DefaultDeck = 
 {
 	Suits: ['Club','Spade','Heart','Diamond'],
-	Values: [2,3,4,5,6,7,8,9,10,11,12,13,14]
+	Values: [2,3,4,5,6,7,8,9,10,11,12,13,14],
+	WildSuit: '*',
+	WildValue: -1,
 };
 
 
@@ -50,6 +52,20 @@ export class Hand
 			throw `Card score ${Score} (${this.Score}) not integer`;
 		}
 	}		
+}
+
+
+
+//	these functions probably want to go into some kind of deck container
+export function GetJokerCards(Count=1)
+{
+	const Cards = [];
+	for ( let i=0;	i<Count;	i++ )
+	{
+		const card = new Card(DefaultDeck.WildSuit,DefaultDeck.WildValue);
+		Cards.push(card);
+	}
+	return Cards;
 }
 
 //	these functions probably want to go into some kind of deck container
