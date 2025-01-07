@@ -7,8 +7,9 @@
 			{
 				--paper: #eee;
 				--border: #aaa;
+				--backingColour: var(--suit-heart);
 				--suit-unknown: #aaa;
-				--suit-heart: #d42a2a;
+				--suit-heart: #eb4034;
 				--suit-diamond: #d4962a;
 				--suit-spade: #333;
 				--suit-club: #2a60d4;
@@ -29,26 +30,36 @@
 				font-size: 10pt;
 			}
 			
+			.SmallCard
+			{
+				--cardWidth: 15pt;
+			}
+			
 			.Card
 			{
 				--shadowHeight: 2px;
 				--shadowWidth: 1px;
 				--shadowRadius: 0.5px;
+				/* redeclare here to make --cardWidth override recalculate */
+				--cardHeight: calc( var(--cardWidth) * 1.4 );
+				--cornerRadius: calc( max( 4px,10% ) );
 				
 				xbox-sizing:	border-box;	/* border is part of size */
 				transition: all ease 0.1s;
+				
+				user-selection: none;
 				
 				display: inline-block;
 				width: var(--cardWidth);
 				height: var(--cardHeight);
 				background: var(--paper);
-				border-radius: 10%;
+				border-radius: var(--cornerRadius);
 				border: 1px solid var(--border);
-				margin:	3pt;
-				padding: 0pt;
+				margin:	0.2em;
+				padding: 0px;
 				font-family: "serif";
 				font-weight: bold;
-				font-size: calc( var(--width) * 0.3 );
+				font-size: calc( var(--cardWidth) * 0.5 );
 				text-align: center;
 				color: var(--suit-unknown);
 				filter: drop-shadow( var(--shadowWidth) var(--shadowHeight) var(--shadowRadius) rgba(0,0,0,0.5) );
@@ -70,12 +81,48 @@
 					--shadowWidth: 3px;
 					--shadowRadius: 3px;
 				}
-			}	
+			}
+			
+			
+			.Card:before,
+			.Card:after
+			{
+				content: "\a0";
+				position: absolute;
+				width: 100%;
+				display: block;
+				font-size: calc( var(--cardWidth) * 0.5 );
+			}
+			
+			/* show backing on unknown card */
+			.Card:not([Suit], [Value]):before
+			{
+				--backingBorderSize: 8%;
+				
+				transition: none;	/* reduce effects being out of sync - but not entirely */
+				background-color: var(--backingColour);
+				--none: rgba(0,0,0,0);
+				--hatch-color: var(--paper);
+				--hatch-gap: 5px;
+				--hatch-end: calc(var(--hatch-gap) + 1px);
+				--hatch-overall-size: calc( var(--hatch-gap) + 1px );
+				background-image:
+				repeating-linear-gradient(45deg, var(--none),var(--none) var(--hatch-gap), var(--hatch-color) var(--hatch-gap), var(--hatch-color) var(--hatch-end) ),
+				repeating-linear-gradient(-45deg, var(--none), var(--none) var(--hatch-gap), var(--hatch-color) var(--hatch-gap), var(--hatch-color) var(--hatch-end) );
+				background-size: var(--hatch-overall-size) var(--hatch-overall-size), var(--hatch-overall-size) var(--hatch-overall-size);
+				
+				top:	var(--backingBorderSize);
+				left:	var(--backingBorderSize);
+				right:	var(--backingBorderSize);
+				bottom:	var(--backingBorderSize);
+				width:	auto;
+				border-radius: var(--cornerRadius);
+			}
 			
 			.Card:before 
 			{
-				display: block;
-				content: attr(Value);
+				top:	0.5em;
+				content: "\a0" attr(Value) "\a0";	/* add non breaking space to make empty cards align */
 			}
 			.Card[Value="11"]:before	{	content: "J";	}
 			.Card[Value="12"]:before	{	content: "Q";	}
@@ -84,10 +131,10 @@
 			
 			.Card:after
 			{
-				display: block;
-				content: attr(Suit);
-				font-size: calc( var(--width) * 0.6 );
+				top:	1.5em;
+				content: "\a0" attr(Suit) "\a0";	/* add non breaking space to make empty cards align */
 			}
+			
 			.Card[Suit=Heart]	{	color: var(--suit-heart);	}
 			.Card[Suit=Diamond]	{	color: var(--suit-diamond);	}
 			.Card[Suit=Spade]	{	color: var(--suit-spade);	}
@@ -129,15 +176,22 @@
 		
 		<div id=BoardContainer>
 			<label>Board</label>
-			<div id=Board></div>
+			<div id=Board><div class=Card onclick="MoveRandomCardToBoard()"></div></div>
 			<div id=BestHandCards></div>
 			<div id=BestHandName></div>
+			<div id=BestHandScore></div>
 		</div>
 		
 		<div id=Pile></div>
 		
 		<script type=module>
 			import * as Poker from './Poker.js'
+			
+			function MoveRandomCardToBoard()
+			{
+				console.log("todo");
+			}
+			window.MoveRandomCardToBoard = MoveRandomCardToBoard;
 			
 			function GetCardMeta(CardDiv)
 			{
@@ -148,7 +202,7 @@
 			
 			function GetBoardCardMetas()
 			{
-				const CardDivs = Array.from( document.querySelectorAll(`#Board .Card`) );
+				const CardDivs = Array.from( document.querySelectorAll(`#Board .Card[Suit]`) );
 				const CardMetas = CardDivs.map( GetCardMeta );
 				return CardMetas;
 			}
@@ -164,7 +218,8 @@
 				}
 				catch(e)
 				{
-					return `Error: ${e}`;
+					const Type = `Error: ${e}`;
+					return new Poker.Hand([],Type,0);
 				}
 			}
 			
@@ -173,9 +228,12 @@
 				const BestHand = GetBoardBestHand();
 				const BestHandCardsDiv = document.querySelector(`#BestHandCards`);
 				const BestHandNameDiv = document.querySelector(`#BestHandName`);
-				const NewCardDivs = BestHand.Cards.map( MakeCardDiv );
+				const BestHandScoreDiv = document.querySelector(`#BestHandScore`);
+				
+				const NewCardDivs = BestHand.Cards.map( c => MakeCardDiv(c,false,["SmallCard"]) );
 				BestHandCardsDiv.replaceChildren(...NewCardDivs);
 				BestHandNameDiv.innerText = BestHand.Type;
+				BestHandScoreDiv.innerText = BestHand.Score;
 			}
 			
 			function OnCardClicked(CardDiv)
@@ -191,10 +249,10 @@
 			}
 			
 			
-			function MakeCardDiv(CardMeta,Clickable)
+			function MakeCardDiv(CardMeta,Clickable,Classes=[])
 			{
 				const CardDiv = document.createElement(`div`);
-				CardDiv.classList.add(`Card`);
+				CardDiv.classList.add(`Card`,...Classes);
 				CardDiv.setAttribute('Value',CardMeta.Value);
 				CardDiv.setAttribute('Suit',CardMeta.Suit);
 				
@@ -203,6 +261,7 @@
 					CardDiv.setAttribute('onclick','');
 					CardDiv.onclick = () => { OnCardClicked(CardDiv); };
 				}
+				//CardDiv.innerText = "x";
 				return CardDiv;
 			}
 			

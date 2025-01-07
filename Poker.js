@@ -22,20 +22,28 @@ export class Card
 	{
 		this.Suit = Suit;
 		this.Value = Number(Value);
+
 		if ( !Number.isInteger(this.Value) )
 		{
-			console.error(`Card value ${Value} (${this.Value}) not integer`);
-			//throw `Card value ${Value} (${this.Value}) not integer`;
+			//console.error(`Card value ${Value} (${this.Value}) not integer`);
+			throw `Card value ${Value} (${this.Value}) not integer`;
 		}
 	}
 }
 
 export class Hand
 {
-	constructor(Cards,HandType)
+	constructor(Cards,HandType,Score)
 	{
 		this.Cards = Cards.slice();
 		this.Type = HandType;
+		this.Score = Number(Score);
+		
+		if ( !Number.isInteger(this.Score) )
+		{
+			//console.error(`Card value ${Value} (${this.Value}) not integer`);
+			throw `Card score ${Score} (${this.Score}) not integer`;
+		}
 	}		
 }
 
@@ -463,7 +471,7 @@ export function GetScoringHand(Cards)
 	];
 	
 	if ( Cards.length == 0 )
-		return new Hand( [], HandTypes.slice(-1)[0] );
+		return new Hand( [], HandTypes.slice(-1)[0], 0 );
 
 	for ( let f=0;	f<GetHandFuncs.length;	f++ )
 	{
@@ -472,7 +480,8 @@ export function GetScoringHand(Cards)
 		if ( HandCards === false )
 			continue;
 		const HandType = HandTypes[f];
-		return new Hand( HandCards, HandType );
+		const Score = 1;
+		return new Hand( HandCards, HandType, Score );
 	}
 	
 	throw "Shouldn't reach here, GetScoringHand should always give a result";
