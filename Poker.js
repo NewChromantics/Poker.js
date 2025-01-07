@@ -493,6 +493,14 @@ function GetHighCardHand(Cards)
 		return false;
 	const Ranks = Cards.map( GetCardRank ).sort( CompareDescending );
 	const FirstHighest = Cards.find( c => IsSameRank( c, Ranks[0] ) );
+	
+	if ( FirstHighest.IsWild )
+	{
+		const RepRank = DefaultDeck.HighestRank;
+		const RepSuit = DefaultDeck.Suits[0];
+		FirstHighest.RepresentCard = new Card(RepSuit,RepRank);
+	}
+	
 	return [FirstHighest];
 }
 
