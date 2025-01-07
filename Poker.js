@@ -251,6 +251,8 @@ function GetCardSuit(Card)
 //	return the best straight+flush hand (5)
 function GetStraightFlushHand(Cards)
 {
+	//	678*T is producing a represented 1 or 0 etc
+	
 	function GetStraightHandOfSuit(IsSuitFunc)
 	{
 		const Hearts = Cards.filter( c => IsSuitFunc(c) );
