@@ -23,11 +23,23 @@
 			
 			html
 			{
-				background: #13a8a8;
+				background: #23bad9;
 				color:	var(--paper);
 				font-family: sans-serif;
 				font-weight: bold;
 				font-size: 10pt;
+				
+				
+				--none: rgba(0,0,0,0);
+				--hatch-color: rgba(255,255,255,0.4);
+				--hatch-gap: 5px;
+				--hatch-end: calc(var(--hatch-gap) + 1px);
+				--hatch-overall-size: calc( var(--hatch-gap) + 3px );
+				background-image:
+				repeating-linear-gradient(45deg, var(--none),var(--none) var(--hatch-gap), var(--hatch-color) var(--hatch-gap), var(--hatch-color) var(--hatch-end) ),
+				repeating-linear-gradient(-45deg, var(--none), var(--none) var(--hatch-gap), var(--hatch-color) var(--hatch-gap), var(--hatch-color) var(--hatch-end) );
+				background-size: var(--hatch-overall-size) var(--hatch-overall-size), var(--hatch-overall-size) var(--hatch-overall-size);
+				
 			}
 			
 			.SmallCard
