@@ -8,6 +8,10 @@ const DefaultDeck =
 	get WildValue()	{	return -1;	},
 	get HighestValue()		{	return this.Values[this.Values.length-1];	},
 	get ValuesDescending()	{	return DefaultDeck.Values.slice().sort(CompareDescending);	},
+	
+	//	todo: a more flexible system for two-value cards
+	get AceIsHighAndLow()	{	return true;	},
+	get Ace()				{	return 14;	},
 };
 
 
@@ -47,8 +51,18 @@ function IsSameValue(a,b)
 {
 	a = (a instanceof Card) ? a.Value : a;
 	b = (b instanceof Card) ? b.Value : b;
+
+	if ( DefaultDeck.AceIsHighAndLow )
+	{
+		if ( a == DefaultDeck.Ace && b == 1 )
+			return true;
+		if ( b == DefaultDeck.Ace && a == 1 )
+			return true;
+	}
+	
 	if ( a == DefaultDeck.WildValue || b == DefaultDeck.WildValue )
 		return true;
+	
 	return a == b;
 }
 
