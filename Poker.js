@@ -305,11 +305,9 @@ function GetStraightHand(Cards,StraightLength=5)
 	let UniqueValues = [...new Set(Values)];
 	const WildCardCount = Values.filter( v => v==DefaultDeck.WildValue ).length;
 	
-	//	todo: wild cards shouldnt double up
-	if ( WildCardCount > 1 )
-		throw `todo: handle multiple wild cards`;
-	
-	if ( UniqueValues.length < StraightLength )
+	//	UniqueValues includes 1 wild card. Additional wildcards can count as other values
+	const AdditionalUniqueValues = Math.max(0,WildCardCount-1);
+	if ( UniqueValues.length+AdditionalUniqueValues < StraightLength )
 		return false;
 	UniqueValues = Values.sort(CompareDescending);
 	
