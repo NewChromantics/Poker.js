@@ -141,7 +141,7 @@
 			}
 			
 			/* show backing on unknown card */
-			.Card:not([Suit], [Value]):before
+			.Card:not([Suit], [Rank]):before
 			{
 				--backingBorderSize: 8%;
 				
@@ -168,13 +168,13 @@
 			.Card:before 
 			{
 				top:	0.3em;
-				content: "\a0" attr(Value) "\a0";	/* add non breaking space to make empty cards align */
+				content: "\a0" attr(Rank) "\a0";	/* add non breaking space to make empty cards align */
 			}
-			.Card[Value="11"]:before	{	content: "J";	}
-			.Card[Value="12"]:before	{	content: "Q";	}
-			.Card[Value="13"]:before	{	content: "K";	}
-			.Card[Value="14"]:before	{	content: "A";	}
-			.Card[Value="-1"]:before
+			.Card[Rank="11"]:before	{	content: "J";	}
+			.Card[Rank="12"]:before	{	content: "Q";	}
+			.Card[Rank="13"]:before	{	content: "K";	}
+			.Card[Rank="14"]:before	{	content: "A";	}
+			.Card[Rank="-1"]:before
 			{	
 				/*content: "\1F0CF";	/* joker emoji */
 				content: "\a0";
@@ -249,7 +249,7 @@
 		<div id=BoardContainer>
 			<label>Board</label>
 			<div id=Board>
-				<!--<div class="Card Static" Value="-1"></div>-->
+				<!--<div class="Card Static" Rank="-1"></div>-->
 				<div class="Card Static" onclick="MoveRandomCardToBoard(this)"></div>
 			</div>
 			<div id=BestHandCards></div>
@@ -298,8 +298,8 @@
 			function GetCardMeta(CardDiv)
 			{
 				const Suit = CardDiv.getAttribute('Suit');
-				const Value = CardDiv.getAttribute('Value');
-				return new Poker.Card(Suit,Value);
+				const Rank = CardDiv.getAttribute('Rank');
+				return new Poker.Card(Suit,Rank);
 			}
 			
 			function GetBoardCardDivs()
@@ -392,7 +392,7 @@
 			{
 				const CardDiv = document.createElement(`div`);
 				CardDiv.classList.add(`Card`,...Classes);
-				CardDiv.setAttribute('Value',CardMeta.Value);
+				CardDiv.setAttribute('Rank',CardMeta.Rank);
 				CardDiv.setAttribute('Suit',CardMeta.Suit);
 				CardDiv.setAttribute('Random', Math.random() );
 				if ( Clickable === true )

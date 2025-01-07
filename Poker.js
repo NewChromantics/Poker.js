@@ -1,15 +1,14 @@
 //	temporary, allow this to be overriden
-//	todo: rename Value to Rank
 const DefaultDeck = 
 {
 	get Suits() 	{	return ['Club','Spade','Heart','Diamond'];	},
-	get Values()	{	return [2,3,4,5,6,7,8,9,10,11,12,13,14];	},
+	get Ranks()	{	return [2,3,4,5,6,7,8,9,10,11,12,13,14];	},
 	get WildSuit()	{	return '*';	},
-	get WildValue()	{	return -1;	},
-	get HighestValue()		{	return this.Values[this.Values.length-1];	},
-	get ValuesDescending()	{	return DefaultDeck.Values.slice().sort(CompareDescending);	},
+	get WildRank()	{	return -1;	},
+	get HighestRank()		{	return this.Ranks[this.Ranks.length-1];	},
+	get RanksDescending()	{	return DefaultDeck.Ranks.slice().sort(CompareDescending);	},
 	
-	//	todo: a more flexible system for two-value cards
+	//	todo: a more flexible system for two-Rank cards
 	get AceIsHighAndLow()	{	return true;	},
 	get Ace()				{	return 14;	},
 };
@@ -27,13 +26,13 @@ function CompareDescending(a,b)
 
 function CompareCardsDescendingWildLast(a,b)
 {
-	a = a.Value;
-	b = b.Value;
+	a = a.Rank;
+	b = b.Rank;
 	if ( a == b )
 		return 0;
-	if ( a == DefaultDeck.WildValue )
+	if ( a == DefaultDeck.WildRank )
 		return 1;
-	if ( b == DefaultDeck.WildValue )
+	if ( b == DefaultDeck.WildRank )
 		return -1;
 	return b-a;
 }
@@ -47,10 +46,10 @@ function IsSameSuit(a,b)
 	return a == b;
 }
 
-function IsSameValue(a,b)
+function IsSameRank(a,b)
 {
-	a = (a instanceof Card) ? a.Value : a;
-	b = (b instanceof Card) ? b.Value : b;
+	a = (a instanceof Card) ? a.Rank : a;
+	b = (b instanceof Card) ? b.Rank : b;
 
 	if ( DefaultDeck.AceIsHighAndLow )
 	{
@@ -60,7 +59,7 @@ function IsSameValue(a,b)
 			return true;
 	}
 	
-	if ( a == DefaultDeck.WildValue || b == DefaultDeck.WildValue )
+	if ( a == DefaultDeck.WildRank || b == DefaultDeck.WildRank )
 		return true;
 	
 	return a == b;
@@ -68,22 +67,37 @@ function IsSameValue(a,b)
 
 export class Card
 {
-	constructor(Suit,Value)
+	constructor(Suit,Rank,OriginalCard)
 	{
 		this.Suit = Suit;
-		this.Value = Number(Value);
+		this.Rank = Number(Rank);
 
-		if ( !Number.isInteger(this.Value) )
+		if ( !Number.isInteger(this.Rank) )
 		{
-			console.error(`Card value ${Value} (${this.Value}) not integer`);
-			//throw `Card value ${Value} (${this.Value}) not integer`;
+			console.error(`Card Rank ${Rank} (${this.Rank}) not integer`);
+			//throw `Card Rank ${Rank} (${this.Rank}) not integer`;
 		}
+	}
+	
+	get SuitOrWildNull()
+	{
+		return this.Suit == DefaultDeck.WildSuit ? null : this.Suit;
+	}
+
+	get RankOrWildNull()
+	{
+		return this.Rank == DefaultDeck.WildRank ? null : this.Rank;
+	}
+
+	get IsWild()
+	{
+		return !this.SuitOrWildNull || !this.RankOrWildNull;
 	}
 	
 	Equals(that)
 	{
-		return (this.Value == that.Value) && (this.Suit == that.Suit);
-		//return IsSameValue(this,that) && IsSameSuit(this,that);
+		return (this.Rank == that.Rank) && (this.Suit == that.Suit);
+		//return IsSameRank(this,that) && IsSameSuit(this,that);
 	}
 	
 }
@@ -112,7 +126,7 @@ export function GetJokerCards(Count=1)
 	const Cards = [];
 	for ( let i=0;	i<Count;	i++ )
 	{
-		const card = new Card(DefaultDeck.WildSuit,DefaultDeck.WildValue);
+		const card = new Card(DefaultDeck.WildSuit,DefaultDeck.WildRank);
 		Cards.push(card);
 	}
 	return Cards;
@@ -124,9 +138,9 @@ export function GetAllCards()
 	const Cards = [];
 	for ( let Suit of DefaultDeck.Suits )
 	{
-		for ( let Value of DefaultDeck.Values )
+		for ( let Rank of DefaultDeck.Ranks )
 		{
-			const card = new Card(Suit,Value);
+			const card = new Card(Suit,Rank);
 			Cards.push(card);
 		}
 	}
@@ -140,8 +154,8 @@ function GetSortedFiveCards(Cards)
 {
 	function Compare(a,b)
 	{
-		const va = GetCardValue(a);
-		const vb = GetCardValue(b);
+		const va = GetCardRank(a);
+		const vb = GetCardRank(b);
 		if ( va > vb )	return -1;
 		if ( va < vb )	return 1;
 		return 0;
@@ -164,14 +178,15 @@ function PopMatchingCards(Cards,MatchCards)
 		const CardIndex = Cards.findIndex( c => c.Equals(MatchCard) );
 		if ( CardIndex < 0 )
 			throw `Matching card ${JSON.stringify(MatchCard)} not found`;
-		Popped.push( ...Cards.splice(CardIndex,1) );
+		const PoppedCard = Cards.splice(CardIndex,1)[0]; 
+		Popped.push( PoppedCard );
 	}
 	return Popped;
 }
 
-function PopNCardsWithValue(Cards,Value,MinimumPopped,MaxiumumPopped)
+function PopNCardsWithRank(Cards,Rank,MinimumPopped,MaxiumumPopped)
 {
-	const Matches = Cards.filter( c => IsSameValue(c,Value) );
+	const Matches = Cards.filter( c => IsSameRank(c,Rank) );
 	if ( Matches.length < MinimumPopped )
 		return false;
 
@@ -186,27 +201,32 @@ function PopNCardsWithValue(Cards,Value,MinimumPopped,MaxiumumPopped)
 	const Popped = [];
 	for ( let i=Cards.length-1;	i>=0;	i-- )
 	{
-		let Card = Cards[i];
-		if ( !IsSameValue(Card,Value) )
+		let MatchCard = Cards[i];
+		if ( !IsSameRank(MatchCard,Rank) )
 			continue;
 		if ( Popped.length >= MaxiumumPopped )
 			break;
-		Popped.push( ...Cards.splice(i,1) );
+		const PoppedCard = Cards.splice(i,1)[0];
+		
+		//	if the card that matched was wild, make it represent an equivelent card
+		if ( MatchCard.IsWild )
+		{
+			const RepRank = MatchCard.RankOrWildNull ?? Rank;
+			//	todo: get a suit that's unused in this meld
+			const RepSuit = MatchCard.SuitOrWildNull ?? DefaultDeck.Suits[0]; 
+			//PoppedCard.RepresentCard = new Card( RepSuit, RepRank );
+		}
+		
+		Popped.push( PoppedCard );
 	}
 	return Popped;
 }
 
-function GetNCardsWithValue(Cards,Value,Limit)
-{
-	const VCards = Cards.filter( c => IsSameValue(c,Value) );
-	VCards.length = Math.min( Limit, VCards.length );
-	return VCards;
-}
 
 //	deprecated
-function GetCardValue(Card)
+function GetCardRank(Card)
 {
-	return Card.Value;
+	return Card.Rank;
 }
 
 //	deprecated
@@ -278,14 +298,14 @@ function IsDescendingSequence(Array)
 //	todo: properly handle 6 card straight etc
 function GetStraightHand(Cards,StraightLength=5)
 {
-	function FindStraightStartingWithValue(Value)
+	function FindStraightStartingWithRank(Rank)
 	{
 		//	wild cards mean we can't just grab sorted chunks any more
 		const TestCards = Cards.slice();
 		const PoppedCards = [];
-		for ( let v=Value;	v>=0;	v-- )
+		for ( let v=Rank;	v>=0;	v-- )
 		{
-			const Popped = PopNCardsWithValue(TestCards,v,1,1);
+			const Popped = PopNCardsWithRank(TestCards,v,1,1);
 			
 			//	required next card missing
 			if ( !Popped )
@@ -304,28 +324,28 @@ function GetStraightHand(Cards,StraightLength=5)
 		//return GetSortedFiveCards(StraightCards);
 	}
 	
-	const Values = Cards.map( GetCardValue );
+	const Ranks = Cards.map( GetCardRank );
 	
 	//	remove duplicates
-	let UniqueValues = [...new Set(Values)];
-	const WildCardCount = Values.filter( v => v==DefaultDeck.WildValue ).length;
+	let UniqueRanks = [...new Set(Ranks)];
+	const WildCardCount = Ranks.filter( v => v==DefaultDeck.WildRank ).length;
 	
-	//	UniqueValues includes 1 wild card. Additional wildcards can count as other values
-	const AdditionalUniqueValues = Math.max(0,WildCardCount-1);
-	if ( UniqueValues.length+AdditionalUniqueValues < StraightLength )
+	//	UniqueRanks includes 1 wild card. Additional wildcards can count as other Ranks
+	const AdditionalUniqueRanks = Math.max(0,WildCardCount-1);
+	if ( UniqueRanks.length+AdditionalUniqueRanks < StraightLength )
 		return false;
-	UniqueValues = Values.sort(CompareDescending);
+	UniqueRanks = Ranks.sort(CompareDescending);
 	
 	//	if we have at least one wild card, we need to try a straight
 	//	with every rank going down... we don't even need to check the rest
 	if ( WildCardCount > 0 )
-		UniqueValues = DefaultDeck.ValuesDescending;
+		UniqueRanks = DefaultDeck.RanksDescending;
 	
 	//	for each number, count up N in a row
-	for ( let i=0;	i<UniqueValues.length;	i++ )
+	for ( let i=0;	i<UniqueRanks.length;	i++ )
 	{
-		const Value = UniqueValues[i];
-		const Straight = FindStraightStartingWithValue(Value);
+		const Rank = UniqueRanks[i];
+		const Straight = FindStraightStartingWithRank(Rank);
 		if ( !Straight )
 			continue;
 		return Straight;
@@ -389,23 +409,23 @@ function GetThreeOfAKindHand(Cards)
 
 function GetAllMeldsInHand(AllCards,MeldSize)
 {
-	const Values = AllCards.map( GetCardValue ).sort( CompareDescending );
-	const UniqueValues = new Set(Values);
+	const Ranks = AllCards.map( GetCardRank ).sort( CompareDescending );
+	const UniqueRanks = new Set(Ranks);
 	
 	//	to make this work with wild cards easily
 	//	pop pairs from the card list until we run out
 	let RemainingCards = AllCards.slice();
 	const Pairs = [];
-	for ( let v of UniqueValues )
+	for ( let v of UniqueRanks )
 	{
 		//	if we test wild against everything, we'll get spurious matches
 		//	*==*, *==3, *==4, *==5 etc
 		//	so treat wild card as highest rank, which will then make multiple wildcards work
 		//	then A==*, A!==4, A!==5
-		if ( v == DefaultDeck.WildValue )
-			v = DefaultDeck.HighestValue;
+		if ( v == DefaultDeck.WildRank )
+			v = DefaultDeck.HighestRank;
 		
-		const Pair = PopNCardsWithValue(RemainingCards,v,MeldSize,MeldSize);
+		const Pair = PopNCardsWithRank(RemainingCards,v,MeldSize,MeldSize);
 		if ( !Pair )
 			continue;
 		Pairs.push(Pair);
@@ -440,122 +460,11 @@ function GetHighCardHand(Cards)
 {
 	if ( Cards.length == 0 )
 		return false;
-	const Values = Cards.map( GetCardValue ).sort( CompareDescending );
-	const FirstHighest = Cards.find( c => IsSameValue( c, Values[0] ) );
+	const Ranks = Cards.map( GetCardRank ).sort( CompareDescending );
+	const FirstHighest = Cards.find( c => IsSameRank( c, Ranks[0] ) );
 	return [FirstHighest];
 }
 
-/*
-function GetHandScore(Cards)
-{
-	//	X000 + HighV gives a unique value
-	function GetScore(GetHandFunc,FuncScore)
-	{
-		const Hand = GetHandFunc( Cards );
-		if ( Hand === false )
-			return 0;
-		let Score = FuncScore * 1000;
-		const HighCardValue = GetCardValue(Hand[0]);
-		Score += HighCardValue;
-		return Score;
-	}
-	const GetHandFuncs =
-	[
-		GetStraightFlushHand,
-		GetFourOfAKindHand,
-		GetFullHouseHand,
-		GetFlushHand,
-		GetStraightHand,
-		GetThreeOfAKindHand,
-		GetTwoPairHand,
-		GetOnePairHand,
-		GetHighCardHand
-	];
-	for ( let f=0;	f<GetHandFuncs.length;	f++ )
-	{
-		const FuncScore = GetHandFuncs.length - f;
-		const Score = GetScore( GetHandFuncs[f], FuncScore );
-		if ( Score != 0 )
-			return Score;
-	}
-	throw "Shouldn't reach here";
-}
-
-
-function CompareBestHands(PlayerA,PlayerB)
-{
-	//	need to re-classify these hands, oops. maybe need a score/id for type
-	const ScoreA = GetHandScore( PlayerA.BestHand );
-	const ScoreB = GetHandScore( PlayerB.BestHand );
-	if ( ScoreA > ScoreB )
-		return -1;
-	if ( ScoreB > ScoreA )
-		return 1;
-	return 0;
-}
-
-function CompareHands(PlayerA,PlayerB)
-{
-	function Compare(CardFunc)
-	{
-		const a = CardFunc(PlayerA.Cards);
-		const b = CardFunc(PlayerB.Cards);
-		if ( a!==false && b===false )
-			return -1;
-		if ( a===false && b!==false )
-			return 1;
-		if ( a!==false && b!==false )
-		{
-			const HighA = GetCardValue(a[0]);
-			const HighB = GetCardValue(b[0]);
-			if ( HighA > HighB )
-				return -1;
-			if ( HighB > HighA )
-				return 1;
-		}
-		//	tie
-		return 0;
-	}
-	
-	const StraightFlush = Compare( GetStraightFlushHand );
-	if ( StraightFlush != 0 )
-		return StraightFlush;
-	
-	const Four = Compare( GetFourOfAKindHand );
-	if ( Four != 0 )
-		return Four;
-	
-	const FullHouse = Compare( GetFullHouseHand );
-	if ( FullHouse != 0 )
-		return FullHouse;
-	
-	const Flush = Compare( GetFlushHand );
-	if ( Flush != 0 )
-		return Flush;
-	
-	const Straight = Compare( GetStraightHand );
-	if ( Straight != 0 )
-		return Straight;
-	
-	const Three = Compare( GetThreeOfAKindHand );
-	if ( Three != 0 )
-		return Three;
-	
-	const Pair2 = Compare( GetTwoPairHand );
-	if ( Pair2 != 0 )
-		return Pair2;
-	
-	const Pair = Compare( GetOnePairHand );
-	if ( Pair != 0 )
-		return Pair;
-	
-	const High = Compare( GetHighCardHand );
-	if ( High != 0 )
-		return High;
-	
-	return 0;
-}
-*/
 
 
 export function GetScoringHand(Cards)
