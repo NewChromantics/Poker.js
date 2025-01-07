@@ -229,8 +229,8 @@ function GetStraightFlushHand(Cards)
 		return StraightHand;
 	}
 	
-	//	enum suits
-	const Suits = new Set( Cards.map(c=>c.Suit) );
+	//	enum suits (into array so .length works)
+	const Suits = [...new Set( Cards.map(c=>c.Suit) ) ];
 	for ( let Suit of Suits )
 	{
 		//	need to ignore matching wild suits here
@@ -238,7 +238,9 @@ function GetStraightFlushHand(Cards)
 		{
 			//	unless there are ONLY wild suits!
 			if ( Suits.length > 1 )
+			{
 				continue;
+			}
 		}
 		
 		const SuitedCards = GetStraightHandOfSuit( c => IsSameSuit(c,Suit) );
