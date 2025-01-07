@@ -289,7 +289,28 @@ function GetFlushHand(Cards)
 			}
 		}
 		
-		const SuitedCards = Cards.filter( c => IsSameSuit(c,Suit) );
+		const SuitedCards = Cards.slice().filter( c => IsSameSuit(c,Suit) );
+
+		function IsCardNotAlreadyFound(Card)
+		{
+			return SuitedCards.find( c => c.Equals(Card) ) == null;
+		}
+		
+		function AddRepresentedCard(MatchCard)
+		{
+			if ( MatchCard.IsWild )
+			{
+				//	todo: get a rank that doesnt then make a straight flush...
+				//	gr: or is that not possible in practise, as the wild card would have already matched a straight flush...
+				//	but we should avoid existing card
+				let PossibleRepresents = DefaultDeck.RanksDescending.map( r => new Card(Suit,r) );
+				PossibleRepresents = PossibleRepresents.filter(IsCardNotAlreadyFound);
+				const RepCard = PossibleRepresents[0];
+				MatchCard.RepresentCard = RepCard;
+			}
+		}
+		
+		SuitedCards.forEach( AddRepresentedCard );
 		if ( SuitedCards.length >= 5 )
 			return GetSortedFiveCards(SuitedCards);
 	}
