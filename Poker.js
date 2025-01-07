@@ -37,6 +37,13 @@ function CompareCardsDescendingWildLast(a,b)
 	return b-a;
 }
 
+function GetHighestRankInCards(Cards)
+{
+	const Ranks = Cards.map( c => c.ScoreCard.Rank );
+	Ranks.sort(CompareDescending);
+	return Ranks[0];
+}
+
 function IsSameSuit(a,b)
 {
 	a = (a instanceof Card) ? a.Suit : a;
@@ -250,13 +257,14 @@ function GetStraightFlushHand(Cards)
 		if ( Hearts.length < 5 )
 			return false;
 		
-		const StraightHand = GetStraightHand(Hearts);
+		const StraightHand = GetStraightHand( Hearts.slice() );
 		return StraightHand;
 	}
 	
 	//	enum suits (into array so .length works)
 	const Suits = [...new Set( Cards.map(c=>c.Suit) ) ];
-	for ( let Suit of Suits )
+	
+	function GetStraightFlushForSuit(Suit)
 	{
 		//	need to ignore matching wild suits here
 		if ( Suit == DefaultDeck.WildSuit )
@@ -264,16 +272,39 @@ function GetStraightFlushHand(Cards)
 			//	unless there are ONLY wild suits!
 			if ( Suits.length > 1 )
 			{
-				continue;
+				return false;
 			}
 		}
 		
 		const SuitedCards = GetStraightHandOfSuit( c => IsSameSuit(c,Suit) );
 		if ( !SuitedCards )
-			continue;
+			return false;
+		
 		return SuitedCards;
 	}
-	return false;
+	
+	const StraightFlushes = [];
+	for ( let Suit of Suits )
+	{
+		const StraightFlush = GetStraightFlushForSuit(Suit);
+		if ( !StraightFlush )
+			continue;
+		StraightFlushes.push(StraightFlush);
+	}
+	
+	if ( StraightFlushes.length == 0 )
+		return false;
+	
+	function CompareCardSetDescending(aaa,bbb)
+	{
+		const a = GetHighestRankInCards(aaa);
+		const b = GetHighestRankInCards(bbb);
+		return b-a;
+	}
+	//	pick best ranked straight flush
+	StraightFlushes.sort(CompareCardSetDescending);
+	
+	return StraightFlushes[0];
 }
 
 
