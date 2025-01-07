@@ -69,12 +69,14 @@
 				--cornerRadius: calc( max( 4px,10% ) );
 				
 				/* auto set a random delay on all anims */
-				animation-delay: calc( attr(random) * 21ms );
+				animation-delay: calc( attr(Random) * 77ms );
 				
 				xbox-sizing:	border-box;	/* border is part of size */
 				transition: all ease 0.1s;
 				
 				user-selection: none;
+				
+				position: relative; /* required for all after/befores */
 				
 				display: inline-block;
 				width: var(--cardWidth);
