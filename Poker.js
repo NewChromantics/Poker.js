@@ -29,6 +29,11 @@ export class Card
 			throw `Card value ${Value} (${this.Value}) not integer`;
 		}
 	}
+	
+	Equals(that)
+	{
+		return (this.Value == that.Value) && (this.Suit == that.Suit);
+	}
 }
 
 export class Hand

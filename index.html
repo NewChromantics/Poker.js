@@ -35,6 +35,30 @@
 				--cardWidth: 15pt;
 			}
 			
+			.RattleOnce,
+			.Rattle,
+			.ScoringCard
+			{
+				animation-name: Rattle;
+				animation-duration: 0.18s;
+				animation-iteration-count: 3;
+			}
+			
+			.Rattle,
+			.ScoringCard
+			{
+				animation-iteration-count: infinite;
+			}
+			
+			@keyframes Rattle
+			{
+				/* use rotate: (since 2022) instead of transform:rotate() so we can animate independetly from transform */
+				0%		{	rotate: 0deg;	}
+				50%		{	rotate: 4deg;	}
+				100%	{	rotate: -4deg;	}
+			}
+			
+			
 			.Card
 			{
 				--shadowHeight: 2px;
@@ -43,6 +67,9 @@
 				/* redeclare here to make --cardWidth override recalculate */
 				--cardHeight: calc( var(--cardWidth) * 1.4 );
 				--cornerRadius: calc( max( 4px,10% ) );
+				
+				/* auto set a random delay on all anims */
+				animation-delay: calc( attr(random) * 21ms );
 				
 				xbox-sizing:	border-box;	/* border is part of size */
 				transition: all ease 0.1s;
@@ -121,7 +148,7 @@
 			
 			.Card:before 
 			{
-				top:	0.5em;
+				top:	0.3em;
 				content: "\a0" attr(Value) "\a0";	/* add non breaking space to make empty cards align */
 			}
 			.Card[Value="11"]:before	{	content: "J";	}
@@ -131,7 +158,7 @@
 			
 			.Card:after
 			{
-				top:	1.5em;
+				bottom:	0.3em;
 				content: "\a0" attr(Suit) "\a0";	/* add non breaking space to make empty cards align */
 			}
 			
@@ -176,7 +203,7 @@
 		
 		<div id=BoardContainer>
 			<label>Board</label>
-			<div id=Board><div class=Card onclick="MoveRandomCardToBoard()"></div></div>
+			<div id=Board><div class=Card onclick="MoveRandomCardToBoard(this)"></div></div>
 			<div id=BestHandCards></div>
 			<div id=BestHandName></div>
 			<div id=BestHandScore></div>
@@ -187,9 +214,32 @@
 		<script type=module>
 			import * as Poker from './Poker.js'
 			
-			function MoveRandomCardToBoard()
+			function RattleCard(CardDiv)
 			{
-				console.log("todo");
+				if ( !CardDiv )
+					return;
+
+				//	to re-trigger a once-shot animation tied to a class, remove old class and add it again.
+				//	but, we need a frame in-between otherwise it's a no-op
+				//	this means there's a 1 frame delay before doing the animation, which is... fine?
+				function AddRattle()
+				{
+					CardDiv.classList.add('RattleOnce');
+				}
+				CardDiv.classList.remove('RattleOnce');
+				requestAnimationFrame(AddRattle);
+			}
+			
+			function MoveRandomCardToBoard(TriggerCard)
+			{
+				RattleCard(TriggerCard);
+				
+				const PileCardDivs = GetPileCardDivs();
+				if ( PileCardDivs.length == 0 )
+					return;
+					
+				const RandomCard = PileCardDivs[Math.floor(Math.random()*PileCardDivs.length)];
+				AddToBoard( RandomCard );
 			}
 			window.MoveRandomCardToBoard = MoveRandomCardToBoard;
 			
@@ -200,9 +250,27 @@
 				return new Poker.Card(Suit,Value);
 			}
 			
+			function GetBoardCardDivs()
+			{
+				return Array.from( document.querySelectorAll(`#Board .Card[Suit]`) );
+			}
+			
+			function GetPileCardDivs()
+			{
+				return Array.from( document.querySelectorAll(`#Pile .Card[Suit]`) );
+			}
+			
 			function GetBoardCardMetas()
 			{
-				const CardDivs = Array.from( document.querySelectorAll(`#Board .Card[Suit]`) );
+				const CardDivs = GetBoardCardDivs();
+				const CardMetas = CardDivs.map( GetCardMeta );
+				return CardMetas;
+			}
+			
+			
+			function GetPileCardMetas()
+			{
+				const CardDivs = GetPileCardDivs();
 				const CardMetas = CardDivs.map( GetCardMeta );
 				return CardMetas;
 			}
@@ -231,9 +299,28 @@
 				const BestHandScoreDiv = document.querySelector(`#BestHandScore`);
 				
 				const NewCardDivs = BestHand.Cards.map( c => MakeCardDiv(c,false,["SmallCard"]) );
+				
 				BestHandCardsDiv.replaceChildren(...NewCardDivs);
 				BestHandNameDiv.innerText = BestHand.Type;
 				BestHandScoreDiv.innerText = BestHand.Score;
+				
+				//	make sure anything in the pile isn't marked as scoring
+				const PileCardDivs = GetPileCardDivs();
+				PileCardDivs.forEach( c => c.classList.remove('ScoringCard') );
+
+				//	highlight the scoring cards
+				const BoardCardDivs = GetBoardCardDivs();
+				function IsScoringCard(CardDiv)
+				{
+					return BestHand.Cards.find( cm => GetCardMeta(CardDiv).Equals(cm) );
+				}
+				function UpdateScoringCardClass(CardDiv)
+				{
+					CardDiv.classList.remove('ScoringCard')
+					if ( IsScoringCard(CardDiv) )
+						CardDiv.classList.add('ScoringCard')
+				}
+				BoardCardDivs.forEach(UpdateScoringCardClass);
 			}
 			
 			function OnCardClicked(CardDiv)
@@ -255,7 +342,7 @@
 				CardDiv.classList.add(`Card`,...Classes);
 				CardDiv.setAttribute('Value',CardMeta.Value);
 				CardDiv.setAttribute('Suit',CardMeta.Suit);
-				
+				CardDiv.setAttribute('Random', Math.random() );
 				if ( Clickable === true )
 				{
 					CardDiv.setAttribute('onclick','');
