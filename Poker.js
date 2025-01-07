@@ -279,7 +279,17 @@ function GetFlushHand(Cards)
 	const Suits = new Set( Cards.map(c=>c.Suit) );
 	for ( let Suit of Suits )
 	{
-		const SuitedCards = Cards.filter( c => c.Suit==Suit );
+		//	need to ignore matching wild suits here
+		if ( Suit == DefaultDeck.WildSuit )
+		{
+			//	unless there are ONLY wild suits!
+			if ( Suits.length > 1 )
+			{
+				continue;
+			}
+		}
+		
+		const SuitedCards = Cards.filter( c => IsSameSuit(c,Suit) );
 		if ( SuitedCards.length >= 5 )
 			return GetSortedFiveCards(SuitedCards);
 	}
