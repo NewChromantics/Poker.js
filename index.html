@@ -69,7 +69,7 @@
 				--cornerRadius: calc( max( 4px,10% ) );
 				
 				/* auto set a random delay on all anims */
-				animation-delay: calc( attr(Random) * 77ms );
+				animation-delay: calc( attr(Random ms) * 77ms );
 				
 				xbox-sizing:	border-box;	/* border is part of size */
 				transition: all ease 0.1s;
@@ -199,16 +199,25 @@
 				min-height: calc( var(--cardHeight) * 1.2 );
 			}
 			
+			#BestHandCards
+			{
+				display:none;
+			}
+			
 		</style>
 	</head>
 	<body>
 		
 		<div id=BoardContainer>
 			<label>Board</label>
-			<div id=Board><div class=Card onclick="MoveRandomCardToBoard(this)"></div></div>
+			<div id=Board>
+				<div class="Card Static" onclick="MoveRandomCardToBoard(this)"></div>
+			</div>
 			<div id=BestHandCards></div>
-			<div id=BestHandName></div>
+			<label id=BestHandName></label>
 			<div id=BestHandScore></div>
+			<Label>Nuts</label>
+			<div id=NutsCards></div>
 		</div>
 		
 		<div id=Pile></div>
@@ -241,7 +250,7 @@
 					return;
 					
 				const RandomCard = PileCardDivs[Math.floor(Math.random()*PileCardDivs.length)];
-				AddToBoard( RandomCard );
+				AddToBoard( RandomCard, true );
 			}
 			window.MoveRandomCardToBoard = MoveRandomCardToBoard;
 			
@@ -360,9 +369,14 @@
 				OnBoardChanged();
 			}
 			
-			function AddToBoard(CardDiv)
+			function AddToBoard(CardDiv,InsertAtBeginning=false)
 			{
-				Board.appendChild(CardDiv);
+				const NonStaticBoardCards = Board.querySelectorAll(`.Card:not(.Static)`);
+				const FirstChild = NonStaticBoardCards[0];
+				if ( InsertAtBeginning && FirstChild )
+					Board.insertBefore(CardDiv,FirstChild);
+				else
+					Board.appendChild(CardDiv);
 				OnBoardChanged();
 			}
 			
