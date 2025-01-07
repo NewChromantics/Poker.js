@@ -1,10 +1,13 @@
 //	temporary, allow this to be overriden
+//	todo: rename Value to Rank
 const DefaultDeck = 
 {
-	Suits: ['Club','Spade','Heart','Diamond'],
-	Values: [2,3,4,5,6,7,8,9,10,11,12,13,14],
-	WildSuit: '*',
-	WildValue: -1,
+	get Suits() 	{	return ['Club','Spade','Heart','Diamond'];	},
+	get Values()	{	return [2,3,4,5,6,7,8,9,10,11,12,13,14];	},
+	get WildSuit()	{	return '*';	},
+	get WildValue()	{	return -1;	},
+	get HighestValue()		{	return this.Values[this.Values.length-1];	},
+	get ValuesDescending()	{	return DefaultDeck.Values.slice().sort(CompareDescending);	},
 };
 
 
@@ -18,6 +21,37 @@ function CompareDescending(a,b)
 	return b-a;
 }
 
+function CompareCardsDescendingWildLast(a,b)
+{
+	a = a.Value;
+	b = b.Value;
+	if ( a == b )
+		return 0;
+	if ( a == DefaultDeck.WildValue )
+		return 1;
+	if ( b == DefaultDeck.WildValue )
+		return -1;
+	return b-a;
+}
+
+function IsSameSuit(a,b)
+{
+	a = (a instanceof Card) ? a.Suit : a;
+	b = (b instanceof Card) ? b.Suit : b;
+	if ( a == DefaultDeck.WildSuit || b == DefaultDeck.WildSuit )
+		return true;
+	return a == b;
+}
+
+function IsSameValue(a,b)
+{
+	a = (a instanceof Card) ? a.Value : a;
+	b = (b instanceof Card) ? b.Value : b;
+	if ( a == DefaultDeck.WildValue || b == DefaultDeck.WildValue )
+		return true;
+	return a == b;
+}
+
 export class Card
 {
 	constructor(Suit,Value)
@@ -27,15 +61,17 @@ export class Card
 
 		if ( !Number.isInteger(this.Value) )
 		{
-			//console.error(`Card value ${Value} (${this.Value}) not integer`);
-			throw `Card value ${Value} (${this.Value}) not integer`;
+			console.error(`Card value ${Value} (${this.Value}) not integer`);
+			//throw `Card value ${Value} (${this.Value}) not integer`;
 		}
 	}
 	
 	Equals(that)
 	{
 		return (this.Value == that.Value) && (this.Suit == that.Suit);
+		//return IsSameValue(this,that) && IsSameSuit(this,that);
 	}
+	
 }
 
 export class Hand
@@ -48,8 +84,8 @@ export class Hand
 		
 		if ( !Number.isInteger(this.Score) )
 		{
-			//console.error(`Card value ${Value} (${this.Value}) not integer`);
-			throw `Card score ${Score} (${this.Score}) not integer`;
+			console.error(`Card Score ${Score} (${this.Score}) not integer`);
+			//throw `Card score ${Score} (${this.Score}) not integer`;
 		}
 	}		
 }
@@ -84,6 +120,8 @@ export function GetAllCards()
 }
 
 
+
+//	todo: wild first as highest card
 function GetSortedFiveCards(Cards)
 {
 	function Compare(a,b)
@@ -99,9 +137,54 @@ function GetSortedFiveCards(Cards)
 	return Cards;
 }
 
+//	this is expecting all the cards to be found
+//	and does NOT use wilds
+function PopMatchingCards(Cards,MatchCards)
+{
+	const Popped = [];
+	//	all matching cards must be found, so
+	//	iterate through them
+	for ( let m=0;	m<MatchCards.length;	m++ )
+	{
+		const MatchCard = MatchCards[m];
+		const CardIndex = Cards.findIndex( c => c.Equals(MatchCard) );
+		if ( CardIndex < 0 )
+			throw `Matching card ${JSON.stringify(MatchCard)} not found`;
+		Popped.push( ...Cards.splice(CardIndex,1) );
+	}
+	return Popped;
+}
+
+function PopNCardsWithValue(Cards,Value,MinimumPopped,MaxiumumPopped)
+{
+	const Matches = Cards.filter( c => IsSameValue(c,Value) );
+	if ( Matches.length < MinimumPopped )
+		return false;
+
+	//	try and pop wild cards last, so we dont accidentally
+	//	use a wildcard instead of a 7
+	//	then when we need a wild card, we have a 7 but not a 5
+	Cards.sort(CompareCardsDescendingWildLast);
+	//	but then, we need to iterate backwards when splicing
+	//	so, reverse
+	Cards = Cards.reverse();
+	
+	const Popped = [];
+	for ( let i=Cards.length-1;	i>=0;	i-- )
+	{
+		let Card = Cards[i];
+		if ( !IsSameValue(Card,Value) )
+			continue;
+		if ( Popped.length >= MaxiumumPopped )
+			break;
+		Popped.push( ...Cards.splice(i,1) );
+	}
+	return Popped;
+}
+
 function GetNCardsWithValue(Cards,Value,Limit)
 {
-	const VCards = Cards.filter( c => GetCardValue(c) == Value );
+	const VCards = Cards.filter( c => IsSameValue(c,Value) );
 	VCards.length = Math.min( Limit, VCards.length );
 	return VCards;
 }
@@ -118,23 +201,6 @@ function GetCardSuit(Card)
 	return Card.Suit;
 }
 
-function GetCardToString(Card)
-{
-	const Suit = GetCardSuit(Card);
-	const SuitName = PlayingCards.SuitNames[Suit];
-	const CardValue = GetCardValue(Card);
-	let CardName = PlayingCards.CardNames[CardValue];
-	if ( !CardName )
-		CardName = CardValue;
-	
-	return SuitName + CardName;
-}
-
-function GetHandToString(Cards)
-{
-	const Names = Cards.map( GetCardToString );
-	return Names.join(', ');
-}
 
 //	return the best straight+flush hand (5)
 function GetStraightFlushHand(Cards)
@@ -150,10 +216,15 @@ function GetStraightFlushHand(Cards)
 	}
 	
 	//	enum suits
-	const Suits = new Set( Cards.map(c=>c.Suit) );
+	//const Suits = new Set( Cards.map(c=>c.Suit) );
+	const Suits = Cards.map(c=>c.Suit);
 	for ( let Suit of Suits )
 	{
-		const SuitedCards = GetStraightHandOfSuit( c => c.Suit == Suit );
+		//	need to ignore matching wild suits here
+		if ( Suit == DefaultDeck.WildSuit )
+			continue;
+		
+		const SuitedCards = GetStraightHandOfSuit( c => IsSameSuit(c,Suit) );
 		if ( !SuitedCards )
 			continue;
 		return SuitedCards;
@@ -188,157 +259,164 @@ function IsDescendingSequence(Array)
 //	todo: properly handle 6 card straight etc
 function GetStraightHand(Cards,StraightLength=5)
 {
+	function FindStraightStartingWithValue(Value)
+	{
+		//	wild cards mean we can't just grab sorted chunks any more
+		const TestCards = Cards.slice();
+		const PoppedCards = [];
+		for ( let v=Value;	v>=0;	v-- )
+		{
+			const Popped = PopNCardsWithValue(TestCards,v,1,1);
+			
+			//	required next card missing
+			if ( !Popped )
+				return false;
+			
+			PoppedCards.push(...Popped);
+			//	remove to make unlimited straight
+			if ( PoppedCards.length == StraightLength )
+				break;
+		}
+		//	didn't make a straight
+		if ( PoppedCards.length < StraightLength )
+			return false;
+		
+		return PoppedCards;
+		//return GetSortedFiveCards(StraightCards);
+	}
+	
 	const Values = Cards.map( GetCardValue );
 	
 	//	remove duplicates
 	let UniqueValues = [...new Set(Values)];
+	const WildCardCount = Values.filter( v => v==DefaultDeck.WildValue ).length;
+	
+	//	todo: wild cards shouldnt double up
+	if ( WildCardCount > 1 )
+		throw `todo: handle multiple wild cards`;
+	
 	if ( UniqueValues.length < StraightLength )
 		return false;
 	UniqueValues = Values.sort(CompareDescending);
 	
+	//	if we have at least one wild card, we need to try a straight
+	//	with every rank going down... we don't even need to check the rest
+	if ( WildCardCount > 0 )
+		UniqueValues = DefaultDeck.ValuesDescending;
+	
 	//	for each number, count up N in a row
 	for ( let i=0;	i<UniqueValues.length;	i++ )
 	{
-		let Set = UniqueValues.slice( i, StraightLength );
-		if ( Set.length != StraightLength )	
+		const Value = UniqueValues[i];
+		const Straight = FindStraightStartingWithValue(Value);
+		if ( !Straight )
 			continue;
-		if ( !IsDescendingSequence(Set) )
-			continue;
-		
-		//	grab cards from original bunch that match this set
-		function GetStraightCard(CardValue)
-		{
-			function MatchCardValue(Card)
-			{
-				return GetCardValue(Card) == CardValue;
-			}
-			const Card = Cards.find( MatchCardValue );
-			if ( Card === undefined )	throw "Failed to match this card in original bunch";
-			return Card;
-		}
-		const StraightCards = Set.map( GetStraightCard );
-		return GetSortedFiveCards(StraightCards);
+		return Straight;
 	}
 	return false;
 }
 
 
-function GetFullHouseHand(Cards)
+function GetFullHouseHand(AllCards)
 {
-	//	for any 5, is there 3 & 2...
-	//	todo: expand to N & N-1
-	const Threes = [];
-	const Pairs = [];
-	const Values = Cards.map( GetCardValue );
-	for ( let v of Values )
-	{
-		const MatchingValues = Values.filter( c => c==v );
-		if ( MatchingValues.length >= 3 )
-			Threes.push( v );
-		if ( MatchingValues.length == 2 )
-			Pairs.push( v );
-	}
-	if ( Threes.length == 0 || Pairs.length == 0 )
+	const RemainingCards = AllCards.slice();
+
+	//	pop trips first
+	const AllTrips = GetAllMeldsInHand(RemainingCards,3);
+	if ( AllTrips.length < 1 )
 		return false;
-	if ( Threes.length > 1 )
-		Threes.sort(CompareDescending);
-	if ( Pairs.length > 1 )
-		Pairs.sort(CompareDescending);
 	
-	//	pick any 3 cards matching Threes[0]
-	//	pick any 2 cards matching Pairs[0]
-	const ThreeCards = GetNCardsWithValue( Cards, Threes[0], 3 );
-	const PairCards = GetNCardsWithValue( Cards, Pairs[0], 2 );
+	const BestTrips = AllTrips[0];
+	const Trips = PopMatchingCards(RemainingCards,BestTrips);
 	
-	const FullHouseCards = ThreeCards.concat( PairCards );
+	//	now pop best pair
+	const AllPairs = GetAllMeldsInHand(RemainingCards,2);
+	if ( AllPairs.length < 1 )
+		return false;
+	
+	const BestPair = AllPairs[0];
+	const Pair = PopMatchingCards(RemainingCards,BestPair);
+	
+	const FullHouseCards = Trips.concat( Pair );
 	return GetSortedFiveCards( FullHouseCards );
+}
+
+function GetFiveOfAKindHand(Cards)
+{
+	const Quints = GetAllMeldsInHand(Cards,5);
+	if ( Quints.length < 1 )
+		return false;
+	
+	return Quints[0];
 }
 
 function GetFourOfAKindHand(Cards)
 {
-	const Values = Cards.map( GetCardValue ).sort( CompareDescending );
-	for ( let v of Values )
-	{
-		const MatchingValues = Values.filter( c => c==v );
-		if ( MatchingValues.length > 4 )
-			throw "Invalid case, >4 four of a kind";
-		if ( MatchingValues.length < 4 )
-			continue;
-		
-		//	grab 4 cards with this value
-		const Hand = GetNCardsWithValue( Cards, v, 4 );
-		return Hand;
-	}
-	return false;
+	const Quads = GetAllMeldsInHand(Cards,4);
+	if ( Quads.length < 1 )
+		return false;
+	
+	return Quads[0];
 }
 
 
 function GetThreeOfAKindHand(Cards)
 {
-	const Values = Cards.map( GetCardValue ).sort( CompareDescending );
-	for ( let v of Values )
-	{
-		const MatchingValues = Values.filter( c => c==v );
-		if ( MatchingValues.length < 3 )
-			continue;
-		
-		//	grab 3 cards with this value
-		const Hand = GetNCardsWithValue( Cards, v, 3 );
-		return Hand;
-	}
-	return false;
-}
-
-//	todo: expand to allow 2 pair, 3 pair, 4 pair etc 
-function GetTwoPairHand(Cards)
-{
-	let PairHi = null;
-	let PairLo = null;
-	const Values = Cards.map( GetCardValue ).sort( CompareDescending );
-	const UniqueValues = new Set(Values);
-	for ( let v of UniqueValues )
-	{
-		const MatchingValues = Values.filter( c => c==v );
-		if ( MatchingValues.length < 2 )
-			continue;
-		if ( PairHi === null )
-		{
-			PairHi = v;
-			continue;
-		}
-		if ( PairLo === null )
-		{
-			PairLo = v;
-			break;
-		}
-	}
-	if ( PairLo === null )
+	const Trips = GetAllMeldsInHand(Cards,3);
+	if ( Trips.length < 1 )
 		return false;
 	
-	const HandHi = GetNCardsWithValue( Cards, PairHi, 2 );
-	const HandLo = GetNCardsWithValue( Cards, PairLo, 2 );
-	return HandHi.concat( HandLo );
+	return Trips[0];
+}
+
+
+function GetAllMeldsInHand(AllCards,MeldSize)
+{
+	const Values = AllCards.map( GetCardValue ).sort( CompareDescending );
+	const UniqueValues = new Set(Values);
+	
+	//	to make this work with wild cards easily
+	//	pop pairs from the card list until we run out
+	let RemainingCards = AllCards.slice();
+	const Pairs = [];
+	for ( let v of UniqueValues )
+	{
+		//	if we test wild against everything, we'll get spurious matches
+		//	*==*, *==3, *==4, *==5 etc
+		//	so treat wild card as highest rank, which will then make multiple wildcards work
+		//	then A==*, A!==4, A!==5
+		if ( v == DefaultDeck.WildValue )
+			v = DefaultDeck.HighestValue;
+		
+		const Pair = PopNCardsWithValue(RemainingCards,v,MeldSize,MeldSize);
+		if ( !Pair )
+			continue;
+		Pairs.push(Pair);
+	}
+	
+	return Pairs;
+}	
+
+
+
+function GetTwoPairHand(Cards)
+{
+	const Pairs = GetAllMeldsInHand(Cards,2);
+	if ( Pairs.length < 2 )
+		return false;
+
+	const AllCards = Pairs[0].concat(Pairs[1]);
+	return AllCards;
 }
 
 function GetOnePairHand(Cards)
 {
-	const Pairs = [];
-	const Values = Cards.map( GetCardValue ).sort( CompareDescending );
-	for ( let v of Values )
-	{
-		const MatchingValues = Values.filter( c => c==v );
-		if ( MatchingValues.length >= 2 )
-			Pairs.push( v );
-	}
-	if ( Pairs.length == 0 )
+	const Pairs = GetAllMeldsInHand(Cards,2);
+	if ( Pairs.length < 1 )
 		return false;
 	
-	//	get pairs with highest value
-	//	now grab any card from the best pair set
-	if ( Pairs.length > 1 )
-		Pairs.sort(CompareDescending);
-	const Hand = GetNCardsWithValue( Cards, Pairs[0], 2 );
-	return Hand;
+	const AllCards = Pairs[0];
+	return AllCards;
 }
 
 function GetHighCardHand(Cards)
@@ -346,7 +424,7 @@ function GetHighCardHand(Cards)
 	if ( Cards.length == 0 )
 		return false;
 	const Values = Cards.map( GetCardValue ).sort( CompareDescending );
-	const FirstHighest = Cards.find( c => c.Value == Values[0] );
+	const FirstHighest = Cards.find( c => IsSameValue( c, Values[0] ) );
 	return [FirstHighest];
 }
 
@@ -468,6 +546,7 @@ export function GetScoringHand(Cards)
 	const HandTypes =
 	[
 		`Straight Flush`,
+		`Five Of A Kind`,
 		`Four Of A Kind`,
 		`Full House`,
 		`Flush`,
@@ -481,6 +560,7 @@ export function GetScoringHand(Cards)
 	const GetHandFuncs =
 	[
 		GetStraightFlushHand,
+		GetFiveOfAKindHand,
 		GetFourOfAKindHand,
 		GetFullHouseHand,
 		GetFlushHand,
