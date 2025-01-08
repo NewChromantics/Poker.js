@@ -361,9 +361,13 @@
 				
 				const NewCardDivs = BestHand.Cards.map( c => MakeCardDiv(c,false,["SmallCard"]) );
 				
+				const BestHandScore = Poker.GetBestHandScore();
+				const ScorePercent = Math.ceil( (BestHand.Score / BestHandScore) * 100 );
+				const ScoreText = `${ScorePercent}% (${BestHand.Score}/${BestHandScore})`;
+				
 				BestHandCardsDiv.replaceChildren(...NewCardDivs);
 				BestHandNameDiv.innerText = BestHand.Type;
-				BestHandScoreDiv.innerText = BestHand.Score;
+				BestHandScoreDiv.innerText = ScoreText;
 				
 				//	make sure anything in the pile isn't marked as scoring
 				const PileCardDivs = GetPileCardDivs();

@@ -14,6 +14,22 @@ const DefaultDeck =
 };
 
 
+//	cache the best score for a hand
+let BestScoreCache = null;
+
+export function GetBestHandScore()
+{
+	if ( BestScoreCache == null )
+	{
+		const Jokers = GetJokerCards(5);
+		const Hand = GetScoringHand(Jokers);
+		BestScoreCache = Hand.Score;
+	}
+	return BestScoreCache;
+}
+
+
+
 function CompareAscending(a,b)
 {
 	return a - b;
