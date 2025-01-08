@@ -37,6 +37,14 @@ function CompareCardsDescendingWildLast(a,b)
 	return b-a;
 }
 
+function IsCardInCards(Needle,Haystack,UseScoreCard=true)
+{
+	if ( UseScoreCard )
+		return Haystack.find( Match => Match.ScoreCard.Equals(Needle.ScoreCard) ) != null;
+	
+	return Haystack.find( Match => Match.Equals(Needle) ) != null;
+}
+
 function GetHighestRankInCards(Cards)
 {
 	const Ranks = Cards.map( c => c.ScoreCard.Rank );
@@ -196,8 +204,11 @@ function PopMatchingCards(Cards,MatchCards)
 	return Popped;
 }
 
-function PopNCardsWithRank(Cards,Rank,MinimumPopped,MaxiumumPopped)
+function PopNCardsWithRank(Cards,Rank,ExpectedPopCount)
 {
+	const MinimumPopped = ExpectedPopCount;
+	const MaxiumumPopped = ExpectedPopCount;
+	
 	const Matches = Cards.filter( c => IsSameRank(c,Rank) );
 	if ( Matches.length < MinimumPopped )
 		return false;
@@ -219,15 +230,6 @@ function PopNCardsWithRank(Cards,Rank,MinimumPopped,MaxiumumPopped)
 		if ( Popped.length >= MaxiumumPopped )
 			break;
 		const PoppedCard = Cards.splice(i,1)[0];
-		
-		//	if the card that matched was wild, make it represent an equivelent card
-		if ( MatchCard.IsWild )
-		{
-			const RepRank = MatchCard.RankOrWildNull ?? Rank;
-			//	todo: get a suit that's unused in this meld
-			const RepSuit = MatchCard.SuitOrWildNull ?? DefaultDeck.Suits[0]; 
-			PoppedCard.RepresentCard = new Card( RepSuit, RepRank );
-		}
 		
 		Popped.push( PoppedCard );
 	}
@@ -253,13 +255,13 @@ function GetStraightFlushHand(Cards)
 {
 	//	678*T is producing a represented 1 or 0 etc
 	
-	function GetStraightHandOfSuit(IsSuitFunc)
+	function GetStraightHandOfSuit(Suit)
 	{
-		const Hearts = Cards.filter( c => IsSuitFunc(c) );
+		const Hearts = Cards.filter( c => IsSameSuit(c,Suit) );
 		if ( Hearts.length < 5 )
 			return false;
 		
-		const StraightHand = GetStraightHand( Hearts.slice() );
+		const StraightHand = GetStraightHand( Hearts.slice(), Suit );
 		return StraightHand;
 	}
 	
@@ -278,7 +280,7 @@ function GetStraightFlushHand(Cards)
 			}
 		}
 		
-		const SuitedCards = GetStraightHandOfSuit( c => IsSameSuit(c,Suit) );
+		const SuitedCards = GetStraightHandOfSuit( Suit );
 		if ( !SuitedCards )
 			return false;
 		
@@ -365,7 +367,7 @@ function IsDescendingSequence(Array)
 
 //	return the best straight hand
 //	todo: properly handle 6 card straight etc
-function GetStraightHand(Cards,StraightLength=5)
+function GetStraightHand(Cards,RepresentSuit=null,StraightLength=5)
 {
 	function FindStraightStartingWithRank(Rank)
 	{
@@ -374,11 +376,32 @@ function GetStraightHand(Cards,StraightLength=5)
 		const PoppedCards = [];
 		for ( let v=Rank;	v>=0;	v-- )
 		{
-			const Popped = PopNCardsWithRank(TestCards,v,1,1);
+			const Popped = PopNCardsWithRank(TestCards,v,1);
 			
 			//	required next card missing
 			if ( !Popped )
 				return false;
+
+			function SetRepCard(MatchCard)
+			{
+				//	if the card that matched was wild, make it represent an equivelent card
+				if ( !MatchCard.IsWild )
+					return;
+
+				//	if RepresentSuit == null, this is not a straight flush
+				//	so we need to pick a suit that's not going to make a straight flush
+				if ( !RepresentSuit )
+				{
+					console.warn(`todo: calculate suit for ${Rank} which doesn't cause a straight flush`);
+					RepresentSuit = DefaultDeck.Suits[0];
+				}
+				
+				const RepRank = MatchCard.RankOrWildNull ?? Rank;
+				//	todo: get a suit that's unused in this meld
+				const RepSuit = MatchCard.SuitOrWildNull ?? RepresentSuit; 
+				MatchCard.RepresentCard = new Card( RepSuit, RepRank );
+			}
+			Popped.forEach( SetRepCard );
 			
 			PoppedCards.push(...Popped);
 			//	remove to make unlimited straight
@@ -485,18 +508,37 @@ function GetAllMeldsInHand(AllCards,MeldSize)
 	//	pop pairs from the card list until we run out
 	let RemainingCards = AllCards.slice();
 	const Pairs = [];
-	for ( let v of UniqueRanks )
+	for ( let Rank of UniqueRanks )
 	{
 		//	if we test wild against everything, we'll get spurious matches
 		//	*==*, *==3, *==4, *==5 etc
 		//	so treat wild card as highest rank, which will then make multiple wildcards work
 		//	then A==*, A!==4, A!==5
-		if ( v == DefaultDeck.WildRank )
-			v = DefaultDeck.HighestRank;
+		if ( Rank == DefaultDeck.WildRank )
+			Rank = DefaultDeck.HighestRank;
 		
-		const Pair = PopNCardsWithRank(RemainingCards,v,MeldSize,MeldSize);
+		const Pair = PopNCardsWithRank(RemainingCards,Rank,MeldSize);
 		if ( !Pair )
 			continue;
+		
+		function SetRepCard(MatchCard)
+		{
+			//	if the card that matched was wild, make it represent an equivelent card
+			if ( !MatchCard.IsWild )
+				return;
+
+			//	we need to pick a suit that's not going to make a flush pair
+			//	so just make them all and use one that's not in the pair we're returning
+			//	todo: ideally not in AllCards?
+			const UseScoreCard = true;
+			const PossibleRepresents = DefaultDeck.Suits.map( s => new Card(s,Rank) ).filter( c => !IsCardInCards(c,Pair,UseScoreCard) );
+			if ( PossibleRepresents.length > 0 )
+			{
+				MatchCard.RepresentCard = PossibleRepresents[0];
+			}
+		}
+		Pair.forEach( SetRepCard );
+		
 		Pairs.push(Pair);
 	}
 	
