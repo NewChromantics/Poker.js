@@ -80,6 +80,13 @@ function IsSameRank(a,b)
 	return a == b;
 }
 
+//	deep copy of Card objects
+//	.slice() is just a shallow copy!
+function CloneCards(Cards)
+{
+	return Cards.map( c => c.Clone() );
+}
+
 export class Card
 {
 	constructor(Suit,Rank,OriginalCard)
@@ -120,13 +127,20 @@ export class Card
 		//return IsSameRank(this,that) && IsSameSuit(this,that);
 	}
 	
+	Clone()
+	{
+		const Clone = new Card( this.Suit, this.Rank );
+		if ( this.RepresentCard != null )
+			Clone.RepresentCard = this.RepresentCard.Clone();
+		return Clone;
+	}
 }
 
 export class Hand
 {
 	constructor(Cards,HandType,Score)
 	{
-		this.Cards = Cards.slice();
+		this.Cards = CloneCards(Cards);
 		this.Type = HandType;
 		this.Score = Number(Score);
 		
@@ -261,7 +275,8 @@ function GetStraightFlushHand(Cards)
 		if ( Hearts.length < 5 )
 			return false;
 		
-		const StraightHand = GetStraightHand( Hearts.slice(), Suit );
+		const ClonedCards = CloneCards(Hearts); 
+		const StraightHand = GetStraightHand( ClonedCards, Suit );
 		return StraightHand;
 	}
 	
@@ -329,7 +344,7 @@ function GetFlushHand(Cards)
 			}
 		}
 		
-		const SuitedCards = Cards.slice().filter( c => IsSameSuit(c,Suit) );
+		const SuitedCards = CloneCards(Cards).filter( c => IsSameSuit(c,Suit) );
 
 		function IsCardNotAlreadyFound(Card)
 		{
@@ -369,14 +384,14 @@ function IsDescendingSequence(Array)
 //	todo: properly handle 6 card straight etc
 function GetStraightHand(Cards,RepresentSuit=null,StraightLength=5)
 {
-	function FindStraightStartingWithRank(Rank)
+	function FindStraightStartingWithRank(FirstRank)
 	{
 		//	wild cards mean we can't just grab sorted chunks any more
-		const TestCards = Cards.slice();
+		const TestCards = CloneCards(Cards);
 		const PoppedCards = [];
-		for ( let v=Rank;	v>=0;	v-- )
+		for ( let Rank=FirstRank;	Rank>=0;	Rank-- )
 		{
-			const Popped = PopNCardsWithRank(TestCards,v,1);
+			const Popped = PopNCardsWithRank(TestCards,Rank,1);
 			
 			//	required next card missing
 			if ( !Popped )
@@ -384,6 +399,9 @@ function GetStraightHand(Cards,RepresentSuit=null,StraightLength=5)
 
 			function SetRepCard(MatchCard)
 			{
+				if ( MatchCard.RepresentCard != null )
+					throw `Modifying card with existing rep card`;
+				
 				//	if the card that matched was wild, make it represent an equivelent card
 				if ( !MatchCard.IsWild )
 					return;
@@ -420,7 +438,7 @@ function GetStraightHand(Cards,RepresentSuit=null,StraightLength=5)
 	
 	//	remove duplicates
 	let UniqueRanks = [...new Set(Ranks)];
-	const WildCardCount = Ranks.filter( v => v==DefaultDeck.WildRank ).length;
+	const WildCardCount = Ranks.filter( r => r==DefaultDeck.WildRank ).length;
 	
 	//	UniqueRanks includes 1 wild card. Additional wildcards can count as other Ranks
 	const AdditionalUniqueRanks = Math.max(0,WildCardCount-1);
@@ -448,7 +466,7 @@ function GetStraightHand(Cards,RepresentSuit=null,StraightLength=5)
 
 function GetFullHouseHand(AllCards)
 {
-	const RemainingCards = AllCards.slice();
+	const RemainingCards = CloneCards(AllCards);
 
 	//	pop trips first
 	const AllTrips = GetAllMeldsInHand(RemainingCards,3);
@@ -506,7 +524,7 @@ function GetAllMeldsInHand(AllCards,MeldSize)
 	
 	//	to make this work with wild cards easily
 	//	pop pairs from the card list until we run out
-	let RemainingCards = AllCards.slice();
+	let RemainingCards = CloneCards(AllCards);
 	const Pairs = [];
 	for ( let Rank of UniqueRanks )
 	{
@@ -523,6 +541,9 @@ function GetAllMeldsInHand(AllCards,MeldSize)
 		
 		function SetRepCard(MatchCard)
 		{
+			if ( MatchCard.RepresentCard != null )
+				throw `Modifying card with existing rep card`;
+			
 			//	if the card that matched was wild, make it represent an equivelent card
 			if ( !MatchCard.IsWild )
 				return;
