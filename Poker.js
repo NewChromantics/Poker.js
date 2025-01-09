@@ -1,7 +1,14 @@
+//	temporary bridge - todo: change clients to get suits from this lib
+export const Suit_Heart = 'Heart';
+export const Suit_Club = 'Club';
+export const Suit_Spade = 'Spade';
+export const Suit_Diamond = 'Diamond';
+
+
 //	temporary, allow this to be overriden
-const DefaultDeck = 
+export const DefaultDeck = 
 {
-	get Suits() 	{	return ['Club','Spade','Heart','Diamond'];	},
+	get Suits() 	{	return [Suit_Heart,Suit_Club,Suit_Diamond,Suit_Spade];	},
 	get Ranks()	{	return [2,3,4,5,6,7,8,9,10,11,12,13,14];	},
 	get WildSuit()	{	return '*';	},
 	get WildRank()	{	return -1;	},
@@ -11,8 +18,17 @@ const DefaultDeck =
 	//	todo: a more flexible system for two-Rank cards
 	get AceIsHighAndLow()	{	return true;	},
 	get Ace()				{	return 14;	},
+	
+	//	should deprecate use of these
+	get RankAce()			{	return 14;	},
+	get RankTen()			{	return 10;	},
+	get RankJack()			{	return 11;	},
+	get RankQueen()			{	return 12;	},
+	get RankKing()			{	return 13;	},
 };
 
+//	html requires default export
+//export default DefaultDeck;
 
 //	cache the best score for a hand
 let BestScoreCache = null;
