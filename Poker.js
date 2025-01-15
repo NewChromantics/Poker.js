@@ -282,14 +282,11 @@ function PopNCardsWithRank(Cards,Rank,ExpectedPopCount)
 	return Popped;
 }
 
-
-//	deprecated
 function GetCardRank(Card)
 {
 	return Card.Rank;
 }
 
-//	deprecated
 function GetCardSuit(Card)
 {
 	return Card.Suit;
