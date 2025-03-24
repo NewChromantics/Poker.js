@@ -3,208 +3,27 @@
 	<title>Bad Beat - Poker.js test app</title>
 	<link rel="icon" href="Joker.svg" sizes="any" type="image/svg+xml">
 	<head>
+		<script src="https://newchromantics.github.io/PlayingCard.WebComponent/playing-card.js" type=module></script>
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 		<style>
 			:root
 			{
-				--paper: #eee;
-				--border: #aaa;
-				--backingColour: var(--suit-heart);
-				--suit-unknown: #aaa;
-				--suit-heart: #eb4034;
-				--suit-diamond: #d4962a;
-				--suit-spade: #333;
-				--suit-club: #2a60d4;
-				
 				/* 3.5 inches x 2.5 inches */
 				--cardWidth: 30pt;
 				--cardHeight: calc( var(--cardWidth) * 1.4 );
-				
-				--raisePx: 10px;
 			}
 			
 			html
 			{
-				color:	var(--paper);
+				color:	#eee;
 				font-family: sans-serif;
 				font-weight: bold;
 				font-size: 10pt;
 				
 				background: #23bad9 url(HatchBackground.svg);
 			}
-			
-			.SmallCard
-			{
-				--cardWidth: 15pt;
-			}
-			
-			.RattleOnce,
-			.Rattle,
-			.ScoringCard
-			{
-				animation-name: Rattle;
-				animation-duration: 0.18s;
-				animation-iteration-count: 3;
-			}
-			
-			.Rattle,
-			.ScoringCard
-			{
-				animation-iteration-count: infinite;
-			}
-			
-			@keyframes Rattle
-			{
-				/* use rotate: (since 2022) instead of transform:rotate() so we can animate independetly from transform */
-				0%		{	rotate: 0deg;	}
-				50%		{	rotate: 4deg;	}
-				100%	{	rotate: -4deg;	}
-			}
-			
-			
-			.Card
-			{
-				--shadowHeight: 2px;
-				--shadowWidth: 1px;
-				--shadowRadius: 0.5px;
-				/* redeclare here to make --cardWidth override recalculate */
-				--cardHeight: calc( var(--cardWidth) * 1.4 );
-				--cornerRadius: calc( max( 4px,10% ) );
-				
-				/* auto set a random delay on all anims */
-				animation-delay: calc( attr(Random ms) * 77ms );
-				
-				xbox-sizing:	border-box;	/* border is part of size */
-				transition: all ease 0.1s;
-				
-				user-selection: none;
-				
-				position: relative; /* required for all after/befores */
-				
-				/*overflow:hidden; this hides the shadow on safari */
-				
-				display: inline-block;
-				width: var(--cardWidth);
-				height: var(--cardHeight);
-				background: var(--paper);
-				border-radius: var(--cornerRadius);
-				border: 1px solid var(--border);
-				margin:	0.2em;
-				padding: 0px;
-				font-family: "serif";
-				font-weight: bold;
-				font-size: calc( var(--cardWidth) * 0.5 );
-				text-align: center;
-				color: var(--suit-unknown);
-				filter: drop-shadow( var(--shadowWidth) var(--shadowHeight) var(--shadowRadius) rgba(0,0,0,0.5) );
-			}
-			
-			.Card[onclick]
-			{
-				background:red!;
-				cursor: pointer;
-			}
-			/* only add hover on devices with hover capabilities */
-			@media(hover) 
-			{
-				.Card[onclick]:hover
-				{
-					transform: translate( -1px, calc( var(--raisePx) * -1 ) ) rotate(-2deg);
-					xxborder-bottom: calc( var(--raisePx) * 1 ) solid rgba(0,0,0,0);
-					--shadowHeight: var(--raisePx);
-					--shadowWidth: 3px;
-					--shadowRadius: 3px;
-					/* when raised, make sure z is up */
-					z-index: 1;
-				}
-			}
-			
-			
-			.Card:before,
-			.Card:after
-			{
-				content: "\a0";
-				position: absolute;
-				width: 100%;
-				display: block;
-				font-size: calc( var(--cardWidth) * 0.5 );
-			}
-			
-			/* show backing on unknown card */
-			.Card:not([Suit], [Rank]):before
-			{
-				--backingBorderSize: 8%;
-				
-				transition: none;	/* reduce effects being out of sync - but not entirely */
-				background-color: var(--backingColour);
-				--none: rgba(0,0,0,0);
-				--hatch-color: var(--paper);
-				--hatch-gap: 5px;
-				--hatch-end: calc(var(--hatch-gap) + 1px);
-				--hatch-overall-size: calc( var(--hatch-gap) + 1px );
-				background-image:
-				repeating-linear-gradient(45deg, var(--none),var(--none) var(--hatch-gap), var(--hatch-color) var(--hatch-gap), var(--hatch-color) var(--hatch-end) ),
-				repeating-linear-gradient(-45deg, var(--none), var(--none) var(--hatch-gap), var(--hatch-color) var(--hatch-gap), var(--hatch-color) var(--hatch-end) );
-				background-size: var(--hatch-overall-size) var(--hatch-overall-size), var(--hatch-overall-size) var(--hatch-overall-size);
-				
-				top:	var(--backingBorderSize);
-				left:	var(--backingBorderSize);
-				right:	var(--backingBorderSize);
-				bottom:	var(--backingBorderSize);
-				width:	auto;
-				border-radius: var(--cornerRadius);
-			}
-			
-			.Card:before 
-			{
-				top:	0.3em;
-				content: "\a0" attr(Rank) "\a0";	/* add non breaking space to make empty cards align */
-			}
-			.Card[Rank="11"]:before	{	content: "J";	}
-			.Card[Rank="12"]:before	{	content: "Q";	}
-			.Card[Rank="13"]:before	{	content: "K";	}
-			.Card[Rank="14"]:before	{	content: "A";	}
-			.Card[Rank="-1"]:before
-			{	
-				/*content: "\1F0CF";	/* joker emoji */
-				content: "\a0";
-				background: url('Joker.svg');
-				background-repeat: no-repeat;
-				background-size: 80%;
-				bottom: 0px;
-				top: 0px;
-				background-position: center
-			}	
-			
-			.Card:after
-			{
-				bottom:	0.3em;
-				content: "\a0" attr(Suit) "\a0";	/* add non breaking space to make empty cards align */
-			}
-			
-			.Card[Suit=Heart]	{	color: var(--suit-heart);	}
-			.Card[Suit=Diamond]	{	color: var(--suit-diamond);	}
-			.Card[Suit=Spade]	{	color: var(--suit-spade);	}
-			.Card[Suit=Club]	{	color: var(--suit-club);	}
-			.Card[Suit="*"]	{	color: rgba(0,0,0,0);	}
-			
-			.Card[Suit=Heart]:after
-			{
-				content: "\2665";	/* &#9829 */
-			}
-			.Card[Suit=Diamond]:after
-			{
-				content: "\2666";	/* &#9830 */
-			}
-			.Card[Suit=Spade]:after
-			{
-				content: "\2660";	/* &#9824 */
-			}
-			.Card[Suit=Club]:after
-			{
-				content: "\2663";	/* &#9827 */
-			}
+						
 			
 			#BoardContainer
 			{
@@ -242,12 +61,15 @@
 		</style>
 	</head>
 	<body>
-		
+		<playing-card image="Joker.svg"></playing-card>
+		<playing-card></playing-card>
+		<playing-card suit="Club"></playing-card>
+		<playing-card suit="$" rank=2></playing-card>
 		<div id=BoardContainer>
 			<label>Board</label>
 			<div id=Board>
 				<!--<div class="Card Static" Rank="-1"></div>-->
-				<div class="Card Static" onclick="MoveRandomCardToBoard(this)"></div>
+				<playing-card class="Static" onclick="MoveRandomCardToBoard(this)"></playing-card>
 			</div>
 			<label>Best Hand</label>
 			<div id=BestHandCards></div>
@@ -298,19 +120,19 @@
 			
 			function GetCardMeta(CardDiv)
 			{
-				const Suit = CardDiv.getAttribute('Suit');
-				const Rank = CardDiv.getAttribute('Rank');
+				const Suit = CardDiv.getAttribute('suit');
+				const Rank = CardDiv.getAttribute('rank');
 				return new Poker.Card(Suit,Rank);
 			}
 			
 			function GetBoardCardDivs()
 			{
-				return Array.from( document.querySelectorAll(`#Board .Card[Suit]`) );
+				return Array.from( document.querySelectorAll(`#Board playing-card[suit]`) );
 			}
 			
 			function GetPileCardDivs()
 			{
-				return Array.from( document.querySelectorAll(`#Pile .Card[Suit]`) );
+				return Array.from( document.querySelectorAll(`#Pile playing-card[suit]`) );
 			}
 			
 			function GetBoardCardMetas()
@@ -398,11 +220,10 @@
 				if ( CardMeta.RepresentCard )
 					CardMeta = CardMeta.RepresentCard;
 				
-				const CardDiv = document.createElement(`div`);
-				CardDiv.classList.add(`Card`,...Classes);
-				CardDiv.setAttribute('Rank',CardMeta.Rank);
-				CardDiv.setAttribute('Suit',CardMeta.Suit);
-				CardDiv.setAttribute('Random', Math.random() );
+				const CardDiv = document.createElement(`playing-card`);
+				CardDiv.classList.add(...Classes);
+				CardDiv.setAttribute('rank',CardMeta.Rank);
+				CardDiv.setAttribute('suit',CardMeta.Suit);
 				if ( Clickable === true )
 				{
 					CardDiv.setAttribute('onclick','');
